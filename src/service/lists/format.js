@@ -16,6 +16,13 @@ export const formatConcertDate = (date, endDate) => {
 
 export const yearOf = (iso) => Number(String(iso).slice(0, 4))
 
+// Today as "YYYY-MM-DD" in the site's time zone (the server runs in UTC).
+export const todayIso = (now = new Date(), timeZone = 'Europe/Rome') =>
+  new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(now)
+
+// A concert is upcoming until its last day is over.
+export const isUpcoming = (concert, today) => (concert.endDate ?? concert.date) >= today
+
 // Groups items by year, most recent year first, keeping the items' order inside each year.
 export const groupByYear = (items, getYear) => {
   const groups = new Map()

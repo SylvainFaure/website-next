@@ -10,7 +10,8 @@ const toValues = (concert) => ({
   artists: concert?.artists?.join('\n') ?? '',
   event: concert?.event ?? '',
   venue: concert?.venue ?? '',
-  city: concert?.city ?? ''
+  city: concert?.city ?? '',
+  maybe: concert?.maybe ? 'on' : ''
 })
 
 const ConcertForm = ({ concert, suggestions }) => {
@@ -48,6 +49,14 @@ const ConcertForm = ({ concert, suggestions }) => {
           <input name="city" list="concert-cities" required defaultValue={values.city} className={inputClass} />
         </Field>
       </div>
+
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" name="maybe" defaultChecked={values.maybe === 'on'} />
+        <span>
+          <span className="font-semibold">Maybe</span>
+          <span className="opacity-60"> · not sure to go yet (shown dimmed, &quot;(maybe)&quot; in the calendar)</span>
+        </span>
+      </label>
 
       <Suggestions id="concert-events" values={suggestions?.events} />
       <Suggestions id="concert-venues" values={suggestions?.venues} />

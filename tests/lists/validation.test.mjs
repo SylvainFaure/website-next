@@ -32,8 +32,10 @@ test('parseConcertForm accepts a valid concert and normalises fields', () => {
     artists: ['Dry Cleaning', 'New Candys'],
     event: 'Ferrara Sotto le Stelle',
     venue: 'Piazza Castello',
-    city: 'Ferrara'
+    city: 'Ferrara',
+    maybe: false
   })
+  assert.equal(parseConcertForm(form({ ...validConcert, maybe: 'on' })).data.maybe, true)
 })
 
 test('parseConcertForm reports missing required fields', () => {

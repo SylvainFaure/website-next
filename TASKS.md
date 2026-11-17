@@ -35,13 +35,17 @@ Still calling AWS today:
 
 ### 2. Concerts: drop the Google Calendar dependency
 
-Today upcoming concerts are read from Google Calendar (`getCalendarEvents` in `UpcomingConcerts`). New flow: Supabase is the source of truth, the calendar is fed from it.
+Before: upcoming concerts were read in the browser from a public Lambda that returned my **whole private Google Calendar** to every visitor (filtered client-side). Now Supabase is the source of truth and the calendar is fed from it.
 
-- [ ] Upcoming concerts come from the Supabase `concerts` table (future dates) instead of Google Calendar
-- [ ] When creating/editing a concert in admin, add it to my calendar (pick one: `.ics` download / subscribable `.ics` feed / "Add to Google Calendar" link / push via Google Calendar API)
-- [ ] Optional fields needed for upcoming gigs (time, ticket link, notes?)
-- [ ] One-off import of current upcoming events from Google Calendar into Supabase
-- [ ] Remove the Calendar Lambda and its env var
+- [ ] **Urgent, on AWS:** disable the Google Calendar Lambda / its API Gateway route (it leaks every calendar event; the current live site may still call it)
+- [x] Upcoming concerts come from the `concerts` table (until their last day), rendered server-side; past page only shows past ones
+- [x] "Maybe" checkbox (replaces the `#maybe` tag): dimmed on the site, "(maybe)" in the calendar — migration `20261117010000_concerts_upcoming.sql`
+- [x] Saving an upcoming concert pushes it to a dedicated "Concerts" Google Calendar (service account, all-day event, edits update it, deletes remove it); admin shows which ones are in the calendar + "add missing" button
+- [x] Fixed: past concerts were hidden when there was no upcoming event
+- [x] Removed the Calendar Lambda call from the code
+- [x] Google setup (service account + "Concerts" calendar) and end-to-end test (create → event, edit → updated, delete → removed)
+- [ ] Remove `NEXT_PUBLIC_LAMBDA_GCALENDAR_EVENTS` from `.env`
+- No extra fields (time, tickets) for now; nothing to import from the old calendar
 
 ### 3. Discogs: same feature, less complexity
 
@@ -83,7 +87,7 @@ Before: every visit fetched all Discogs pages and PUT them to an AWS Lambda + Dy
 ### 7. Deploy on Vercel
 
 - [ ] Push the repo to a git remote (none configured yet) and link it to a Vercel project
-- [ ] Set env vars on Vercel (Supabase keys, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `DISCOGS_TOKEN`, `SPOTIFY_CLIENT`, Spotify refresh token for "now playing")
+- [ ] Set env vars on Vercel (Supabase keys, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `DISCOGS_TOKEN`, `SPOTIFY_CLIENT`, Spotify refresh token for "now playing", `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_CALENDAR_ID`)
 - [ ] Check `npm run build`, `npm run lint`, `npm test` pass
 - [ ] Point the domain to Vercel and check the old URLs still resolve (redirects)
 - [ ] Replace the default create-next-app `README.md`

@@ -84,7 +84,8 @@ export const parseConcertForm = (formData) => {
     artists,
     event: text(errors, 'event', str(formData, 'event'), { label: 'Event' }),
     venue: text(errors, 'venue', str(formData, 'venue'), { label: 'Venue', required: true }),
-    city: text(errors, 'city', str(formData, 'city'), { label: 'City', required: true })
+    city: text(errors, 'city', str(formData, 'city'), { label: 'City', required: true }),
+    maybe: formData.get('maybe') === 'on'
   }
 
   return result(errors, { data })
