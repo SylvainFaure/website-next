@@ -5,6 +5,7 @@ import { requireAdmin } from '@/service/auth/admin'
 import { fetchCovers, syncFromDiscogs } from '@/service/discogs/releases'
 
 const revalidateDiscogs = () => {
+  revalidatePath('/lists')
   revalidatePath('/lists/my-discogs')
   revalidatePath('/admin/discogs')
 }

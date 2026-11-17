@@ -10,12 +10,8 @@ const Header = () => {
       href: "/about",
     },
     {
-      label: "Concerts",
-      href: "/lists/concerts",
-    },
-    {
-      label: "Books",
-      href: "/lists/books",
+      label: "Lists",
+      href: "/lists",
     },
     {
       label: "Music",

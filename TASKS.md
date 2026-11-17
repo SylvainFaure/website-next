@@ -87,9 +87,10 @@ Before: the footer called an AWS Lambda holding a refresh token in env vars; tha
 ### 5. Lists hub
 
 - [x] Discogs moved to `/lists/my-discogs` (with redirects)
-- [ ] Discogs, Concerts and Books all live under `/lists`
-- [ ] One "Lists" entry in the menu instead of separate Concerts / Books entries
-- [ ] `/lists` home page linking to the three lists
+- [x] Discogs, Concerts and Books all live under `/lists`
+- [x] One "Lists" entry in the menu instead of separate Concerts / Books entries (menu: Home, About, Lists, Music)
+- [x] `/lists` home page: one card per list with counts, next concert (or the last ones) and latest book / record covers; revalidated by admin edits
+- [x] "← Lists" link on the Discogs 3D page (it has no site menu); home page link points to `/lists/my-discogs`
 
 ### 6. About page
 

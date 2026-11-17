@@ -15,6 +15,7 @@ import { formValues, parseConcertForm, parseId } from '@/service/lists/validatio
 const FIELDS = ['date', 'endDate', 'artists', 'event', 'venue', 'city', 'maybe']
 
 const revalidateConcerts = () => {
+  revalidatePath('/lists')
   revalidatePath('/lists/concerts')
   revalidatePath('/lists/concerts/past')
   revalidatePath('/admin/concerts')

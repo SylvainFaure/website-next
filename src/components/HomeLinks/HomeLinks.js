@@ -26,7 +26,7 @@ const LINKS = [
   },
   {
     label: 'Discogs wantlist',
-    url: '/projects/my-discogs-wantlist',
+    url: '/lists/my-discogs',
     content: `
             <div>
               In case you want to make me a gift you can get some inspirations there!

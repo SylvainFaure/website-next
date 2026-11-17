@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import imagesLoaded from 'imagesloaded'
 import DiscogsItem from './Item'
 
@@ -114,6 +115,9 @@ const MyDiscogs = ({ lists }) => {
   return (
     <div className="page discogs">
       <header className={visibility}>
+        <Link href="/lists" className="text-sm opacity-70 hover:opacity-100 hover:underline">
+          ← Lists
+        </Link>
         <h1 className="page-title">
           <a className="discogs-logo" href="https://www.discogs.com">
             <img src="/discogs-vinyl.svg" alt="" />

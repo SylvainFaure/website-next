@@ -10,6 +10,7 @@ import { formValues, parseBookForm, parseId, sniffImageType } from '@/service/li
 const FIELDS = ['title', 'author', 'edition', 'lang', 'isbn', 'year']
 
 const revalidateBooks = () => {
+  revalidatePath('/lists')
   revalidatePath('/lists/books')
   revalidatePath('/admin/books')
 }
