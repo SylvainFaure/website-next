@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react"
 import Icon from "@/components/Icon"
 import Player from "@/components/Player"
-import { getSpotifyCurrentTrack } from "@/service"
 
 const LINKS = [
     {
@@ -22,11 +21,11 @@ const Footer = () => {
   const [playerInfos, setPlayerInfos] = useState(null)
 
   useEffect(() => {
-    const fetchPlayerInfos = async () => {
-      const track = await getSpotifyCurrentTrack()
-      setPlayerInfos(track)
-    }
-    fetchPlayerInfos()
+    // Current (or last) Spotify track; the footer simply hides the player if it fails
+    fetch("/api/now-playing")
+      .then((res) => (res.ok ? res.json() : null))
+      .then(setPlayerInfos)
+      .catch(() => {})
   }, [])
 
   return (

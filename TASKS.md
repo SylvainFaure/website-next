@@ -66,11 +66,23 @@ Before: every visit fetched all Discogs pages and PUT them to an AWS Lambda + Dy
 
 ### 4. Music: Spotify + other services + listening history
 
-- [ ] Move the Spotify "now playing" call from the Lambda to a server route (refresh token stored server-side, never `NEXT_PUBLIC_`)
-- [ ] Study Deezer and Bandcamp (API availability, auth, what can be read: now playing, history, purchases/library) and write down the conclusions
-- [ ] Store history in Supabase: tracks listened + albums/tracks saved to the library, with source (`spotify` / `deezer` / `bandcamp`)
-- [ ] Scheduled sync (Vercel cron) to collect history, since Spotify only exposes the last 50 played tracks
-- [ ] Player/footer: support several sources; add a page to browse the history
+Before: the footer called an AWS Lambda holding a refresh token in env vars; that token was revoked, so the player was already empty. Since 2026 Spotify refresh tokens expire 6 months after the authorization (refreshing doesn't extend them) and the app owner needs Premium.
+
+- [x] "Now playing" from `/api/now-playing` (cached 30 s), current track else last played; the Lambda call is gone
+- [x] Admin `/admin/music`: "Connect Spotify" (OAuth, refresh token stored in the private `music_accounts` table, not in env vars), shows when the access ends, "Sync now"
+- [x] History in Supabase: `music_plays` (every play) and `music_library` (saved tracks/albums, removed ones kept with `removed_at`), `source` column for other services later — migration `20261117020000_music.sql`
+- [x] `/api/cron/music` (protected by `CRON_SECRET`): last 50 plays + new saves every run, full library pass once a day
+- [x] Public page `/music`: recent plays by day (consecutive tracks of an album grouped under one cover), recently saved albums/tracks, "Music" menu entry, footer player links to it
+- [x] Top artists/albums from Spotify's own ranking (`user-top-read`, 4 weeks / 6 months / 12 months tabs), daily snapshot in `music_top` (migration `20261117030000_music_top.sql`); albums derived from the top 50 tracks
+- [x] Spotify connected locally (redirect URI `http://127.0.0.1:3000/admin/spotify/callback`), first sync done: 7,880 saved tracks, 1,376 albums, plays from Nov 16
+- [ ] After deploy: allow `https://<domain>/admin/spotify/callback` in the Spotify app
+- [ ] Later: our own "most played this week" with play counts, once there is enough history
+- [ ] After deploy: hourly Supabase cron job (`pg_cron` + `pg_net`) calling `/api/cron/music` with the secret stored in Supabase Vault (Vercel Hobby crons only run daily)
+- [ ] Reconnect Spotify every 6 months (the admin warns 2 weeks before)
+- [ ] Remove the unused `SPOTIFY_REFRESH_TOKEN`, `SPOTIFY_TOKEN`, `SPOTIFY_TOKEN_URL`, `SPOTIFY_QUERY_URL`, `NEXT_PUBLIC_LAMBDA_SPOTIFY_URL`, `LAMBDA_SPOTIFY_DISCOGS`, `TABLE_NAME`, `COLLECTION_TABLE_NAME` env vars; delete the Spotify Lambda on AWS
+- [ ] Later: browse older history (pagination / by month)
+- Deezer: not now. Its developer portal doesn't accept new applications (Nov 2026), so it can't be connected unless that reopens
+- Bandcamp: dropped. No official fan API (only unofficial collection/wishlist endpoints) and no listening history
 
 ### 5. Lists hub
 
@@ -87,7 +99,7 @@ Before: every visit fetched all Discogs pages and PUT them to an AWS Lambda + Dy
 ### 7. Deploy on Vercel
 
 - [ ] Push the repo to a git remote (none configured yet) and link it to a Vercel project
-- [ ] Set env vars on Vercel (Supabase keys, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `DISCOGS_TOKEN`, `SPOTIFY_CLIENT`, Spotify refresh token for "now playing", `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_CALENDAR_ID`)
+- [ ] Set env vars on Vercel (Supabase keys, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `DISCOGS_TOKEN`, `SPOTIFY_CLIENT`, `CRON_SECRET`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_CALENDAR_ID`)
 - [ ] Check `npm run build`, `npm run lint`, `npm test` pass
 - [ ] Point the domain to Vercel and check the old URLs still resolve (redirects)
 - [ ] Replace the default create-next-app `README.md`

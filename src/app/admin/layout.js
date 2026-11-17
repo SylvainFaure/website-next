@@ -28,6 +28,9 @@ export default async function AdminLayout({ children }) {
               <Link href="/admin/discogs" className="hover:underline">
                 Discogs
               </Link>
+              <Link href="/admin/music" className="hover:underline">
+                Music
+              </Link>
               <Link href="/"className="ml-auto text-sm hover:underline">
                 View site
               </Link>

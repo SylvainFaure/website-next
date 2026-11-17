@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Icon from "@/components/Icon";
 const Player = ({ 
   artists, 
@@ -10,7 +11,9 @@ const Player = ({
   return (
     <div>
       <p className="px-5 sm:px-0 mt-4 sm:-mt-1.5 mb-0 text-xs italic">
-        {currently_playing ? 'Currently playing' : 'Last track played'}
+        <Link href="/music" className="hover:underline">
+          {currently_playing ? 'Currently playing' : 'Last track played'}
+        </Link>
       </p>
       
       <div className="flex justify-center gap-3 max-h-[70px] w-auto md:w-full overflow-hidden">

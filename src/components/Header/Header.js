@@ -17,6 +17,10 @@ const Header = () => {
       label: "Books",
       href: "/lists/books",
     },
+    {
+      label: "Music",
+      href: "/music",
+    },
   ]
 
   return (
