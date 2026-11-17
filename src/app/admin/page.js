@@ -3,7 +3,8 @@ import { requireAdmin } from '@/service/auth/admin'
 
 const SECTIONS = [
   { href: '/admin/concerts', label: 'Concerts', description: 'Past concerts shown on /lists/concerts/past' },
-  { href: '/admin/books', label: 'Books', description: 'Books shown on /lists/books' }
+  { href: '/admin/books', label: 'Books', description: 'Books shown on /lists/books' },
+  { href: '/admin/discogs', label: 'Discogs', description: 'Sync the wantlist and collection shown on /lists/my-discogs' }
 ]
 
 export default async function AdminHomePage() {

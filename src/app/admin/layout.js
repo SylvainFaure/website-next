@@ -25,7 +25,10 @@ export default async function AdminLayout({ children }) {
               <Link href="/admin/books" className="hover:underline">
                 Books
               </Link>
-              <Link href="/" className="ml-auto text-sm hover:underline">
+              <Link href="/admin/discogs" className="hover:underline">
+                Discogs
+              </Link>
+              <Link href="/"className="ml-auto text-sm hover:underline">
                 View site
               </Link>
               <form action={logout}>

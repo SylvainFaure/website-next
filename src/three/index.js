@@ -8,7 +8,6 @@ import ASScroll from '@ashthornton/asscroll'
 
 export default class Scene {
   constructor({ modal, container, images = [], callback, eventHandlers, isMobile, options = {} }) {
-    console.log('Scene constructor')
     this.modal = modal
     this.modalOpened = false
     this.images = images
@@ -90,22 +89,8 @@ export default class Scene {
   }
 
   setupResize() {
-    window.addEventListener('resize', this.resize.bind(this))
-  }
-
-  toDataUrl(url, callback) {
-    var xhr = new XMLHttpRequest();
-    xhr.onload = function() {
-      console.log('onload')
-      var reader = new FileReader();
-      reader.onloadend = function() {
-        callback(reader.result);
-      }
-      reader.readAsDataURL(xhr.response);
-    };
-    xhr.open('GET', url);
-    xhr.responseType = 'blob';
-    xhr.send();
+    this.onResize = this.resize.bind(this)
+    window.addEventListener('resize', this.onResize)
   }
 
   addObjects() {
@@ -147,8 +132,7 @@ export default class Scene {
           console.warn(error)
         }
       )
-      // let texture = new THREE.Texture(img)
-      texture.needsUpdate = true
+      // TextureLoader flags the texture for upload once the image has loaded
       m.uniforms.uTexture.value = texture
 
       let mesh = new THREE.Mesh(this.geometry, m)
@@ -156,18 +140,21 @@ export default class Scene {
       mesh.scale.set(width, height, 1)
       const id = `image-${Math.floor(Math.random() * 10000)}`
 
-      img.addEventListener('click', (evt) => {
+      const onClick = (evt) => {
         if (this.handlers && this.handlers.animationOn) {
           this.handlers.animationOn(evt)
         }
         this.handleOnAnimation(id)
-      })
-      
+      }
+      img.addEventListener('click', onClick)
+
       return {
         id,
         img,
         mesh,
         material: m,
+        texture,
+        onClick,
         width: 350, height: 300, top, left
       }
     })
@@ -176,7 +163,7 @@ export default class Scene {
   }
 
   handleModalClick () {
-    this.modal.addEventListener('click', (evt) => {
+    this.onModalClick = (evt) => {
       const classList = Array.from(evt.target.classList)
       if (!classList.includes('modal-content') && !classList.includes('modal-content__cta-link')) {
         this.handleOffAnimation()
@@ -185,7 +172,8 @@ export default class Scene {
           this.handlers.animationOff()
         }
       }
-    })
+    }
+    this.modal.addEventListener('click', this.onModalClick)
   }
 
   frontAnimation (img) {
@@ -306,6 +294,7 @@ export default class Scene {
   }
 
   render() {
+    if (this.stop) return
     this.time += 0.05
     this.material.uniforms.time.value = this.time
     // this.material.uniforms.uProgress.value = this.settings.progress
@@ -317,22 +306,37 @@ export default class Scene {
       this.setPosition()
     }
     this.renderer.render(this.scene, this.camera)
-    requestAnimationFrame(this.render.bind(this))
+    this.frame = requestAnimationFrame(this.render.bind(this))
   }
 
+  // Stops the render loop and releases listeners and GPU resources, so a new scene can take over.
   destroy () {
-    console.log('Destroy scene')
+    this.stop = true
+    cancelAnimationFrame(this.frame)
+    window.removeEventListener('resize', this.onResize)
+    this.modal.removeEventListener('click', this.onModalClick)
+    this.imageStore.forEach(({ img, onClick, material, texture }) => {
+      img.removeEventListener('click', onClick)
+      texture.dispose()
+      material.dispose()
+    })
+    this.tlOn?.kill()
+    this.disappearTl?.kill()
+    this.restoreTl?.kill()
     this.asscroll.scrollTo(0)
     this.asscroll.disable()
     this.asscroll = null
     window.scrollTo(0, 0)
+    this.geometry.dispose()
+    this.material.dispose()
+    this.renderer.dispose()
     this.container.innerHTML = ''
     this.imageStore = []
-    this.materials = undefined
+    this.materials = []
     this.images = undefined
     this.modal = undefined
-    while(this.scene.children.length > 0){ 
-      this.scene.remove(this.scene.children[0]); 
+    while(this.scene.children.length > 0){
+      this.scene.remove(this.scene.children[0]);
     }
   }
 }

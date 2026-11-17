@@ -2,6 +2,7 @@ import 'server-only'
 import { createClient } from '@supabase/supabase-js'
 
 export const COVERS_BUCKET = 'book-covers'
+export const RECORD_COVERS_BUCKET = 'record-covers'
 
 const options = { auth: { persistSession: false, autoRefreshToken: false } }
 
@@ -22,8 +23,8 @@ export const getPublicClient = () =>
 export const getAdminClient = () =>
   (adminClient ??= createClient(required('SUPABASE_URL'), required('SUPABASE_SECRET_KEY'), options))
 
-export const coverUrl = (path) => {
+export const coverUrl = (path, bucket = COVERS_BUCKET) => {
   if (!path) return null
   const encoded = path.split('/').map(encodeURIComponent).join('/')
-  return `${required('SUPABASE_URL')}/storage/v1/object/public/${COVERS_BUCKET}/${encoded}`
+  return `${required('SUPABASE_URL')}/storage/v1/object/public/${bucket}/${encoded}`
 }

@@ -1,201 +1,200 @@
 'use client'
-import { useState, useEffect, useRef, useCallback } from 'react'
-import DiscogsItem from './Item'
+import { useEffect, useRef, useState } from 'react'
 import imagesLoaded from 'imagesloaded'
-const MyDiscogs = ({ page }) => {
+import DiscogsItem from './Item'
+
+const MOBILE_WIDTH = 780
+const NO_ITEMS = []
+
+const CATEGORIES = {
+  wantlist: {
+    label: 'Wantlist',
+    description: "Les disques que je n'ai pas encore mais que j'aimerais bien !"
+  },
+  collection: {
+    label: 'Collection',
+    description: "Les disques que j'ai et que je mets de temps en temps sur la platine"
+  }
+}
+
+// Cold CDN cache + ~300 parallel requests can make a few covers fail: retry those once.
+const retryBrokenImages = (images) =>
+  Promise.all(
+    images
+      .filter((img) => !img.naturalWidth)
+      .map(
+        (img) =>
+          new Promise((resolve) => {
+            img.onload = img.onerror = () => resolve()
+            img.src = `${img.src.split('?')[0]}?retry=1`
+          })
+      )
+  )
+
+const Row = ({ items, name }) => (
+  <div className={`items__row ${name}`}>
+    {items.map((item) => (
+      <div key={item.id} className="item__wrapper">
+        <DiscogsItem item={item} />
+      </div>
+    ))}
+  </div>
+)
+
+const MyDiscogs = ({ lists }) => {
+  const [category, setCategory] = useState('wantlist')
+  // null until measured in the browser
+  const [isMobile, setIsMobile] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [scene, setScene] = useState(null)
-  const [isMobile, setIsMobile] = useState(false)
-  const [selectedItem, setSelectedItem] = useState({})
-  const [mouseEntered, setMouseEntered] = useState(false)
-  const [category, setCategory] = useState('wants')
-  const [items, setItems] = useState(page[category])
-  const [firstRow, setFirstRow] = useState(items?.filter((item, i) => i % 2 === 0))
-  const [secondRow, setSecondRow] = useState(items?.filter((item, i) => i % 2 !== 0))
+  // Once the fade-in is over, drop the delayed CSS transition so the scene's animations aren't delayed
+  const [settled, setSettled] = useState(false)
+  const [selectedItem, setSelectedItem] = useState(null)
 
   const modalRef = useRef(null)
   const containerRef = useRef(null)
+  const itemsRef = useRef(null)
 
-  const handleAnimationOn = useCallback(
-    (evt) => {
-      const id = evt.target.closest('.item').dataset.id
-      setSelectedItem(page[category].find((node) => node.id === id))
-    },
-    [category, page]
-  )
-
-  const instanciateScene = useCallback(() => {
-    imagesLoaded('.js-image', async () => {
-      const Scene = await import('@/three/index.js')
-      setScene(
-        new Scene.default({
-          modal: modalRef.current,
-          container: containerRef.current,
-          images: [...document.querySelectorAll('.js-image[data-src=spotify]')],
-          callback: sceneInstanciated,
-          isMobile: isMobile,
-          eventHandlers: {
-            animationOn: handleAnimationOn,
-            animationOff: handleAnimationOff
-          }
-        })
-      )
-    })
-  }, [handleAnimationOn, isMobile])
-
-  const sceneInstanciated = () => {
-    console.log('Callback')
-    setTimeout(() => {
-      setLoading(false)
-      setTimeout(() => {
-        const visible = document.querySelectorAll('.visible')
-        Array.from(visible).forEach((item) => {
-          item.classList.remove('visible')
-        })
-      }, 1500)
-    }, 1000)
-  }
-
-  const handleAnimationOff = () => {
-    setSelectedItem({})
-  }
-  const handleImageHover = (on) => {
-    setMouseEntered(on)
-  }
-
-  const destroyScene = () => {
-    scene.destroy()
-  }
-
-  const changeCategory = (_category) => {
-    setLoading(true)
-    window.scrollTo(0, 0)
-    if (_category !== category) {
-      const _items = page[_category]
-      setCategory(_category)
-      setItems(_items)
-      setFirstRow(_items.filter((item, i) => i % 2 === 0))
-      setSecondRow(_items.filter((item, i) => i % 2 !== 0))
-      reloadScene()
-      setTimeout(() => {
-        setLoading(false)
-      })
-    }
-  }
-  const reloadScene = () => {
-    setTimeout(() => {
-      destroyScene()
-      instanciateScene()
-    })
-  }
+  const items = lists[category] ?? NO_ITEMS
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setTimeout(() => {
-        if (document.body.clientWidth < 780) {
-          setIsMobile(true)
-          setLoading(false)
+    setIsMobile(document.body.clientWidth < MOBILE_WIDTH)
+  }, [])
+
+  // One 3D scene per list: built once the covers are loaded, destroyed when switching list or leaving the page.
+  useEffect(() => {
+    if (isMobile === null) return
+    let scene = null
+    let cancelled = false
+    const timers = []
+
+    setLoading(true)
+    setSettled(false)
+    window.scrollTo(0, 0)
+
+    // Only covers stored in Supabase can be WebGL textures (the other hosts don't send CORS headers)
+    const images = [...itemsRef.current.querySelectorAll('.js-image[data-src="cover"]')]
+    imagesLoaded(images, async () => {
+      await retryBrokenImages(images)
+      const { default: Scene } = await import('@/three/index.js')
+      if (cancelled) return
+      scene = new Scene({
+        modal: modalRef.current,
+        container: containerRef.current,
+        // A cover that still failed would be sized wrong in 3D: leave it out
+        images: images.filter((img) => img.naturalWidth),
+        isMobile,
+        callback: () => {
+          timers.push(
+            setTimeout(() => {
+              setLoading(false)
+              timers.push(setTimeout(() => setSettled(true), 1500))
+            }, 1000)
+          )
+        },
+        eventHandlers: {
+          animationOn: (evt) => {
+            const id = evt.target.closest('.item')?.dataset.id
+            setSelectedItem(items.find((item) => item.id === id) ?? null)
+          },
+          animationOff: () => setSelectedItem(null)
         }
-        instanciateScene()
       })
+    })
+
+    return () => {
+      cancelled = true
+      timers.forEach(clearTimeout)
+      scene?.destroy()
     }
-  }, [instanciateScene])
+  }, [category, isMobile, items])
+
+  const visibility = loading ? 'visibility-hidden' : settled ? '' : 'visible'
+  const { label, description } = CATEGORIES[category]
 
   return (
-    <div className="page discogs" key={category}>
-      <header className={loading ? 'visibility-hidden' : 'visible'}>
+    <div className="page discogs">
+      <header className={visibility}>
         <h1 className="page-title">
           <a className="discogs-logo" href="https://www.discogs.com">
             <img src="/discogs-vinyl.svg" alt="" />
           </a>
           My Discogs
           <span className="categories">
-            <span
-              className={category !== 'wants' ? 'notselected' : ''}
-              onClick={() => changeCategory('wants')}>
-              Wantlist
-            </span>
-            -
-            <span
-              className={category !== 'releases' ? 'notselected' : ''}
-              onClick={() => changeCategory('releases')}>
-              Collection
-            </span>
+            {Object.entries(CATEGORIES).map(([key, value], i) => (
+              <span key={key} className="contents">
+                {i > 0 && '-'}
+                <span
+                  role="button"
+                  tabIndex={0}
+                  className={category !== key ? 'notselected' : ''}
+                  onClick={() => setCategory(key)}
+                  onKeyDown={(e) => e.key === 'Enter' && setCategory(key)}>
+                  {value.label}
+                </span>
+              </span>
+            ))}
           </span>
         </h1>
-        <div className="page-description">
-          {category === 'wants'
-            ? "Les disques que je n'ai pas encore mais que j'aimerais bien !"
-            : "Les disques que j'ai et que je met de temps en temps sur la platine"}
-        </div>
+        <div className="page-description">{description}</div>
         <div className="page-total-discs">
-          Ma {category === 'wants' ? 'Wantlist' : 'Collection'} comporte
-          {page && page[category] && page[category].length} disques.
+          Ma {label} comporte {items.length} disques.
         </div>
       </header>
 
       <div>
-        <section
-          className={loading ? 'items__wrapper visibility-hidden' : 'items__wrapper visible'}
-          asscroll-container="">
-          {!isMobile ? (
+        <section key={category} ref={itemsRef} className={`items__wrapper ${visibility}`} asscroll-container="">
+          {isMobile ? (
             <div className="items">
-              <div className="items__row first">
-                {firstRow && !!firstRow.length
-                  ? firstRow.map((item) => {
-                      return (
-                        <div key={`first-row-${item.id}`} className="item__wrapper">
-                          <DiscogsItem item={item} />
-                        </div>
-                      )
-                    })
-                  : null}
-              </div>
-              <div className="items__row second">
-                {secondRow && !!secondRow.length
-                  ? secondRow.map((item) => {
-                      return (
-                        <div key={`second-row-${item.id}`} className="item__wrapper">
-                          <DiscogsItem item={item} />
-                        </div>
-                      )
-                    })
-                  : null}
-              </div>
+              {items.map((item) => (
+                <div key={item.id} className="item__wrapper">
+                  <DiscogsItem item={item} />
+                </div>
+              ))}
             </div>
           ) : (
             <div className="items">
-              {items &&
-                !!items.length &&
-                items.map((item) => {
-                  ;<div key={item.id} className="item__wrapper">
-                    <DiscogsItem {...item} />
-                  </div>
-                })}
+              <Row name="first" items={items.filter((_, i) => i % 2 === 0)} />
+              <Row name="second" items={items.filter((_, i) => i % 2 !== 0)} />
             </div>
           )}
         </section>
       </div>
+
       <section className={loading ? 'page-loading' : 'page-loading hidden'}>
         Loading...
         <a className="discogs-logo" href="https://www.discogs.com">
           <img src="/discogs-vinyl.svg" alt="" />
         </a>
       </section>
-      <div
-        ref={containerRef}
-        id="container"
-        className={loading ? 'visibility-hidden' : 'visible'}></div>
+
+      <div ref={containerRef} id="container" className={visibility}></div>
+
       <div ref={modalRef} id="modal">
         <div className="modal-content">
           <div className="modal-content__infos">
-            <h2>{selectedItem.artist}</h2>
-            <h3>{selectedItem.album}</h3>
-            <p>{selectedItem.year}</p>
+            <h2>{selectedItem?.artist}</h2>
+            <h3>{selectedItem?.title}</h3>
+            <p>{selectedItem?.year || null}</p>
           </div>
           <div className="modal-content__image"></div>
           <div className="modal-content__cta">
-            <a className="modal-content__cta-link" target="_blank" href={selectedItem.discogs_link}>
+            {selectedItem?.spotifyUrl && (
+              <>
+                <a
+                  className="modal-content__cta-link"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  href={selectedItem.spotifyUrl}>
+                  Listen on Spotify
+                </a>
+                <span className="px-3">·</span>
+              </>
+            )}
+            <a
+              className="modal-content__cta-link"
+              target="_blank"
+              rel="noopener noreferrer"
+              href={selectedItem?.discogsUrl}>
               See on Discogs -&gt;
             </a>
           </div>

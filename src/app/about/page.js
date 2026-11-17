@@ -161,7 +161,7 @@ const About = () => {
                   </a>
                   . My presentation is of course all in French, but the language of music is
                   universal! Feel also free to take a look at my
-                  <Link className="mr-1 animated" href="/projects/my-discogs-wantlist">
+                  <Link className="mr-1 animated" href="/lists/my-discogs">
                     Discogs wantlist
                   </Link>
                   (a vinyl is always a beautiful gift <span>&#128521;</span>)

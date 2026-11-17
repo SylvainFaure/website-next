@@ -26,7 +26,9 @@ const nextConfig = {
   async redirects() {
     return [
       { source: '/calendar', destination: '/lists/concerts', permanent: true },
-      { source: '/calendar/past', destination: '/lists/concerts/past', permanent: true }
+      { source: '/calendar/past', destination: '/lists/concerts/past', permanent: true },
+      { source: '/projects/mydiscogs', destination: '/lists/my-discogs', permanent: true },
+      { source: '/projects/my-discogs-wantlist', destination: '/lists/my-discogs', permanent: true }
     ]
   }
 }
